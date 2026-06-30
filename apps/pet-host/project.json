@@ -1,0 +1,29 @@
+{
+    "name": "pet-host",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "apps/pet-host/src",
+    "projectType": "application",
+    "targets": {
+        "build": {
+            "executor": "nx:run-commands",
+            "outputs": ["{workspaceRoot}/dist/apps/pet-host"],
+            "options": {
+                "commands": [
+                    "esbuild apps/pet-host/src/main.ts --bundle --platform=node --format=cjs --outfile=dist/apps/pet-host/main.js --external:electron",
+                    "esbuild apps/pet-host/src/preload.ts --bundle --platform=node --format=cjs --outfile=dist/apps/pet-host/preload.js --external:electron"
+                ],
+                "parallel": false
+            }
+        },
+        "serve": {
+            "executor": "nx:run-commands",
+            "options": {
+                "commands": [
+                    "pnpm nx build pet-host",
+                    "concurrently -k \"pnpm nx serve pet-shell\" \"wait-on http://localhost:4200 && PET_SHELL_DEV_SERVER_URL=http://localhost:4200 electron dist/apps/pet-host/main.js\""
+                ],
+                "parallel": false
+            }
+        }
+    }
+}

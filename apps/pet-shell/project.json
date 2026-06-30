@@ -1,79 +1,85 @@
 {
-  "name": "pet-shell",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "prefix": "app",
-  "sourceRoot": "apps/pet-shell/src",
-  "tags": [],
-  "targets": {
-    "build": {
-      "executor": "@angular/build:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
-      "defaultConfiguration": "production",
-      "options": {
-        "outputPath": "dist/apps/pet-shell",
-        "browser": "apps/pet-shell/src/main.ts",
-        "tsConfig": "apps/pet-shell/tsconfig.app.json",
-        "inlineStyleLanguage": "scss",
-        "assets": [
-          {
-            "glob": "**/*",
-            "input": "apps/pet-shell/public"
-          }
-        ],
-        "styles": [
-          "apps/pet-shell/src/styles.scss"
-        ]
-      },
-      "configurations": {
-        "production": {
-          "budgets": [
-            {
-              "type": "initial",
-              "maximumWarning": "500kb",
-              "maximumError": "1mb"
+    "name": "pet-shell",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "prefix": "app",
+    "sourceRoot": "apps/pet-shell/src",
+    "tags": [],
+    "targets": {
+        "build": {
+            "executor": "@angular/build:application",
+            "outputs": ["{options.outputPath}"],
+            "defaultConfiguration": "production",
+            "options": {
+                "outputPath": "dist/apps/pet-shell",
+                "browser": "apps/pet-shell/src/main.ts",
+                "tsConfig": "apps/pet-shell/tsconfig.app.json",
+                "inlineStyleLanguage": "scss",
+                "assets": [
+                    {
+                        "glob": "**/*",
+                        "input": "apps/pet-shell/public"
+                    }
+                ],
+                "styles": ["apps/pet-shell/src/styles.scss"]
             },
-            {
-              "type": "anyComponentStyle",
-              "maximumWarning": "4kb",
-              "maximumError": "8kb"
+            "configurations": {
+                "production": {
+                    "budgets": [
+                        {
+                            "type": "initial",
+                            "maximumWarning": "500kb",
+                            "maximumError": "1mb"
+                        },
+                        {
+                            "type": "anyComponentStyle",
+                            "maximumWarning": "4kb",
+                            "maximumError": "8kb"
+                        }
+                    ],
+                    "outputHashing": "all"
+                },
+                "development": {
+                    "optimization": false,
+                    "extractLicenses": false,
+                    "sourceMap": true
+                }
             }
-          ],
-          "outputHashing": "all"
         },
-        "development": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      }
-    },
-    "serve": {
-      "continuous": true,
-      "executor": "@angular/build:dev-server",
-      "defaultConfiguration": "development",
-      "configurations": {
-        "production": {
-          "buildTarget": "pet-shell:build:production"
+        "serve": {
+            "continuous": true,
+            "executor": "@angular/build:dev-server",
+            "defaultConfiguration": "development",
+            "configurations": {
+                "production": {
+                    "buildTarget": "pet-shell:build:production"
+                },
+                "development": {
+                    "buildTarget": "pet-shell:build:development"
+                }
+            }
         },
-        "development": {
-          "buildTarget": "pet-shell:build:development"
+        "lint": {
+            "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/.eslintrc.json",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                    "externalDependencies": ["eslint"]
+                }
+            ]
+        },
+        "serve-static": {
+            "continuous": true,
+            "executor": "@nx/web:file-server",
+            "options": {
+                "buildTarget": "pet-shell:build",
+                "staticFilePath": "dist/apps/pet-shell/browser",
+                "spa": true
+            }
         }
-      }
-    },
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
-    "serve-static": {
-      "continuous": true,
-      "executor": "@nx/web:file-server",
-      "options": {
-        "buildTarget": "pet-shell:build",
-        "staticFilePath": "dist/apps/pet-shell/browser",
-        "spa": true
-      }
     }
-  }
 }
