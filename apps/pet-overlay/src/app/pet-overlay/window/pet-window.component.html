@@ -1,0 +1,13 @@
+<main class="pet-window" aria-label="Desktop pet">
+    <section class="pet-stage">
+        @if (pet(); as currentPet) {
+            @if (currentPet.hasAtlas()) {
+                <app-pet-sprite-atlas [pet]="currentPet"></app-pet-sprite-atlas>
+            } @else {
+                <app-fallback-pet-sprite [action]="currentPet.action"></app-fallback-pet-sprite>
+            }
+        } @else {
+            <app-fallback-pet-sprite></app-fallback-pet-sprite>
+        }
+    </section>
+</main>

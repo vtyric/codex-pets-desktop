@@ -20,7 +20,19 @@
             "options": {
                 "commands": [
                     "pnpm nx build pet-host",
-                    "concurrently -k \"pnpm nx serve pet-shell\" \"wait-on http://localhost:4200 && PET_SHELL_DEV_SERVER_URL=http://localhost:4200 electron dist/apps/pet-host/main.js\""
+                    "concurrently -k \"pnpm nx serve pet-overlay\" \"wait-on http://localhost:4200 && PET_OVERLAY_DEV_SERVER_URL=http://localhost:4200 electron dist/apps/pet-host/main.js\""
+                ],
+                "parallel": false
+            }
+        },
+        "dist-mac": {
+            "executor": "nx:run-commands",
+            "outputs": ["{workspaceRoot}/release"],
+            "options": {
+                "commands": [
+                    "pnpm nx build pet-overlay --configuration production",
+                    "pnpm nx build pet-host",
+                    "electron-builder --mac --config electron-builder.yml"
                 ],
                 "parallel": false
             }

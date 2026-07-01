@@ -1,0 +1,45 @@
+@use 'sass:math';
+@use 'variables' as *;
+
+.pet-sprite-atlas-shell {
+    position: relative;
+    display: grid;
+    height: $pet-window-height;
+    aspect-ratio: math.div($pet-atlas-cell-width, $pet-atlas-cell-height);
+}
+
+.pet-sprite-atlas-shell::before,
+.pet-sprite-atlas-shell::after {
+    position: absolute;
+    z-index: 1;
+    content: '';
+    -webkit-app-region: no-drag;
+}
+
+.pet-sprite-atlas-shell::before {
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.pet-sprite-atlas-shell::after {
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 8px;
+    cursor: ns-resize;
+}
+
+.pet-sprite-atlas {
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-size: 800% 900%;
+    cursor: grab;
+    image-rendering: pixelated;
+    touch-action: none;
+    user-select: none;
+    will-change: transform;
+}

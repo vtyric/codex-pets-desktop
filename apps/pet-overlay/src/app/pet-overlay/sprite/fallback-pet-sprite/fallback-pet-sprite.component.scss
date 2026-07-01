@@ -1,0 +1,28 @@
+@use 'variables' as *;
+@use 'animations' as *;
+
+.pet-sprite {
+    display: grid;
+    width: $pet-size-md;
+    height: $pet-size-md;
+    place-items: center;
+    border: $pet-outline-width solid $color-pet-outline;
+    border-radius: $radius-pet;
+    background:
+        radial-gradient(circle at 50% 36%, $color-pet-highlight, transparent 30%),
+        $color-pet-body;
+    box-shadow: $shadow-pet;
+    animation: pet-idle $animation-idle-duration ease-in-out infinite;
+}
+
+.pet-face {
+    display: flex;
+    gap: $spacing-xl;
+}
+
+.pet-eye {
+    width: $pet-eye-size;
+    height: $pet-eye-size;
+    border-radius: $radius-round;
+    background: $color-pet-eye;
+}

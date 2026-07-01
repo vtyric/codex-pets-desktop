@@ -11,19 +11,19 @@
 To run the dev server for your app, use:
 
 ```sh
-npx nx serve pet-shell
+npx nx serve pet-overlay
 ```
 
 To create a production bundle:
 
 ```sh
-npx nx build pet-shell
+npx nx build pet-overlay
 ```
 
 To see all available targets to run for a project, run:
 
 ```sh
-npx nx show project pet-shell
+npx nx show project pet-overlay
 ```
 
 These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.

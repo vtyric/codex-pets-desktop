@@ -1,0 +1,34 @@
+appId: dev.codex-pets.desktop
+productName: Codex Pets Desktop
+artifactName: '${productName}-${version}-${os}-${arch}.${ext}'
+
+directories:
+  output: release
+
+files:
+  - package.json
+  - dist/apps/pet-host/main.js
+  - dist/apps/pet-host/preload.js
+  - dist/apps/pet-overlay/browser/**/*
+
+extraMetadata:
+  main: dist/apps/pet-host/main.js
+
+asar: true
+
+mac:
+  category: public.app-category.entertainment
+  target:
+    - dmg
+    - zip
+  identity: null
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+      type: file
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
