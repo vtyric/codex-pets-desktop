@@ -8,12 +8,15 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "importHelpers": true,
+        "baseUrl": ".",
         "target": "es2015",
         "module": "esnext",
         "lib": ["es2020", "dom"],
         "skipLibCheck": true,
         "skipDefaultLibCheck": true,
-        "paths": {}
+        "paths": {
+            "@codex-pets-desktop/pet-shared": ["apps/pet-shared/src/ipc.ts"]
+        }
     },
     "exclude": ["node_modules", "tmp"]
 }

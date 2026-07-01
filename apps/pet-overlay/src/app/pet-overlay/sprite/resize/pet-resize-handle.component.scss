@@ -1,0 +1,49 @@
+@use 'mixins' as *;
+@use 'variables' as *;
+
+:host {
+    @include no-drag-region;
+
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: block;
+    width: 24px;
+    height: 24px;
+    cursor: nwse-resize;
+}
+
+.pet-resize-handle {
+    @include no-drag-region;
+
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 0;
+    color: rgba(255, 255, 255, 0.92);
+    background: transparent;
+    border-radius: 4px;
+    cursor: nwse-resize;
+    opacity: 0;
+    touch-action: none;
+    transition:
+        opacity 120ms ease,
+        background 120ms ease;
+}
+
+:host-context(.pet-sprite-atlas-shell:hover) .pet-resize-handle,
+.pet-resize-handle:hover {
+    opacity: 1;
+    background: rgba(24, 24, 27, 0.72);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.pet-resize-handle__icon {
+    width: 10px;
+    height: 10px;
+    background: currentColor;
+    -webkit-mask: url('./codex-resize-handle.svg') center / 10px 10px no-repeat;
+    mask: url('./codex-resize-handle.svg') center / 10px 10px no-repeat;
+}
