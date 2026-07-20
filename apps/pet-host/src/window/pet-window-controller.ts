@@ -18,6 +18,14 @@ import { PetWindowSizeService } from './pet-window-size-service';
 const petWindowScreenMargin = 60;
 const hoverTrackingIntervalMs = 100;
 const actionResetDelayMs = 180;
+const petWindowEvents = {
+    closed: 'closed',
+    move: 'move',
+    readyToShow: 'ready-to-show',
+    resize: 'resize',
+    resized: 'resized',
+    willResize: 'will-resize',
+} as const;
 
 interface PetWindowControllerOptions {
     actionController: PetWindowActionController;
@@ -168,27 +176,35 @@ export class PetWindowController {
             return;
         }
 
-        this.suppressMoveAction = true;
         const bounds = this.petWindow.getBounds();
-        const size = this.options.sizeService.updateFromNativeSize({
+        this.options.sizeService.updateFromNativeSize({
             width: bounds.width,
             height: bounds.height,
         });
+        this.lastWindowPosition = {
+            x: bounds.x,
+            y: bounds.y,
+        };
+    }
 
-        if (bounds.width !== size.width || bounds.height !== size.height) {
-            this.petWindow.setBounds({
-                ...bounds,
-                width: size.width,
-                height: size.height,
-            });
+    private handleWindowResizeStarted(): void {
+        this.suppressMoveAction = true;
+    }
+
+    private handleWindowResizeFinished(): void {
+        if (!this.petWindow) {
+            return;
         }
 
+        this.handleWindowResize();
         this.keepInVisibleWorkArea();
-        const nextBounds = this.petWindow.getBounds();
+
+        const bounds = this.petWindow.getBounds();
         this.lastWindowPosition = {
-            x: nextBounds.x,
-            y: nextBounds.y,
+            x: bounds.x,
+            y: bounds.y,
         };
+
         timer(0)
             .pipe(takeUntil(this.windowClosed$))
             .subscribe(() => {
@@ -353,7 +369,7 @@ export class PetWindowController {
         const eventSource = petWindow as EventEmitter;
 
         this.nativeWindowSubscription.add(
-            fromEvent(eventSource, 'ready-to-show')
+            fromEvent(eventSource, petWindowEvents.readyToShow)
                 .pipe(take(1), takeUntil(this.windowClosed$))
                 .subscribe(() => {
                     if (!this.petWindow) {
@@ -369,7 +385,7 @@ export class PetWindowController {
                 }),
         );
         this.nativeWindowSubscription.add(
-            fromEvent(eventSource, 'closed')
+            fromEvent(eventSource, petWindowEvents.closed)
                 .pipe(take(1))
                 .subscribe(() => {
                     this.windowClosed$.next();
@@ -383,17 +399,31 @@ export class PetWindowController {
                 }),
         );
         this.nativeWindowSubscription.add(
-            fromEvent(eventSource, 'move')
+            fromEvent(eventSource, petWindowEvents.move)
                 .pipe(takeUntil(this.windowClosed$))
                 .subscribe(() => {
                     this.handleWindowMove();
                 }),
         );
         this.nativeWindowSubscription.add(
-            fromEvent(eventSource, 'resize')
+            fromEvent(eventSource, petWindowEvents.willResize)
+                .pipe(takeUntil(this.windowClosed$))
+                .subscribe(() => {
+                    this.handleWindowResizeStarted();
+                }),
+        );
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, petWindowEvents.resize)
                 .pipe(takeUntil(this.windowClosed$))
                 .subscribe(() => {
                     this.handleWindowResize();
+                }),
+        );
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, petWindowEvents.resized)
+                .pipe(takeUntil(this.windowClosed$))
+                .subscribe(() => {
+                    this.handleWindowResizeFinished();
                 }),
         );
     }

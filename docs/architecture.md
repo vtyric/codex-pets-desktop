@@ -192,14 +192,17 @@ and must not resize the native pet window directly. Resize controls are
 rendered by `pet-overlay` only as passive UI. Native resize is owned by
 `pet-host`: `BrowserWindow` is resizable, `PetWindowSizeService` provides
 min/max sizes and the Codex atlas cell aspect ratio, and the host listens to
-native resize events to keep the stored size and visible work area valid. The
-renderer uses viewport-sized layout (`100vw`/`100vh`) so it adapts after the
-host changes the native window size.
+native `will-resize`, `resize`, and `resized` events to keep the stored size and
+visible work area valid. The operating system owns interactive resizing on both
+macOS and Windows; the host must not call `setBounds` from the continuous
+`resize` handler. The renderer uses viewport-sized layout (`100vw`/`100vh`) so
+it adapts after the native window size changes.
 
-The pet overlay must not appear in macOS screenshots or screen recordings.
-This is host-owned: `PetWindowCaptureProtectionService` applies Electron
-content protection to the native pet window on macOS. Renderer code must not
-try to detect screenshot gestures or hide itself with timers.
+The pet overlay must not appear in macOS or Windows screenshots and screen
+recordings. This is host-owned: `PetWindowCaptureProtectionService` applies
+Electron content protection to the native pet window on both platforms.
+Renderer code must not try to detect screenshot gestures or hide itself with
+timers.
 
 macOS launch-at-login is host-owned. `PetLoginItemService` enables
 `openAtLogin` through Electron login item settings only for packaged macOS
