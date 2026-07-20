@@ -59,6 +59,8 @@ apps/pet-host/src
 ├── container               Awilix composition root
 ├── ipc                     Typed IPC handlers and action bridge
 ├── pet                     Pet state, assets, and host events
+├── pet-manager             Host-side manager adapters grouped by feature
+├── platform                Shared host platform constants
 └── window                  Native pet window controllers and sizing
 ```
 
@@ -68,17 +70,86 @@ Each major UI entity is modeled as a separate frontend app:
 apps
 ├── pet-host       Electron host and native orchestration
 ├── pet-overlay    Angular pet overlay frontend
-└── pet-shared     Shared typed IPC contracts
+├── pet-manager    Angular pet management frontend
+├── pet-shared     Shared typed IPC contracts
+└── ../libs/pet-domain
 ```
 
-Future settings UI must be added as a separate frontend app next to
-`pet-overlay`, not inside the pet overlay source tree.
+Pet management UI must be a separate frontend app next to `pet-overlay`, not
+inside Electron host code and not inside the pet overlay source tree.
+`pet-manager` owns screens for viewing installed pets, searching pets, deleting
+pets through menus, adding pets through the existing Codex Pets CLI, selecting
+the active pet, and switching the manager theme. User-facing manager strings must
+use Angular template i18n markers. English is the default source locale. Language
+switching loads Angular `$localize` translations before bootstrap and reloads the
+manager window when the user selects another language, not as a runtime
+translation pipe. Complete translation dictionaries for every supported manager
+language live as JSON files under `pet-manager/i18n/translations`; TypeScript only
+selects and loads the active dictionary. Templates use Angular's short custom-ID
+markers such as `i18n-label="@@petManagerAddPetAction"`; the custom ID matches the
+JSON key.
+Electron only owns the native window that hosts this frontend and the typed IPC
+adapter to filesystem-backed pet storage.
 
-Inside `pet-overlay`, the pet feature is grouped under one boundary:
+Electron intercepts the manager window's native close event so closing the
+manager never stops the host or the pet. The window is hidden on macOS and
+minimized on Windows; activating the macOS Dock app restores it. Closing also
+reloads the manager renderer so transient Angular screen state is reset, while
+persisted preferences and filesystem-backed pet state remain intact. During a
+real application quit, Electron is allowed to destroy the window normally.
+
+Pure pet behavior lives in `libs/pet-domain`. This library must not import
+Electron, Angular, DOM, filesystem, protocol, or IPC APIs. Host and renderer
+apps are adapters over this domain.
+
+`pet-domain` owns:
+
+```text
+libs/pet-domain/src
+├── index.ts       Public domain API for host and renderer adapters
+├── pet
+│   ├── creation    Flow for validating Codex manifests and creating pet state
+│   ├── runtime     Desktop pet aggregate and shared pet types
+│   ├── animation   Frame timing and playback rules
+│   ├── sprite      Sprite atlas and background-position logic
+│   └── interaction Host-independent action rules
+└── window
+    ├── window-types.ts
+    └── pet-window-size-policy.ts
+```
+
+Pet creation flow is explicit: host adapters pass an unknown Codex manifest to
+`PetCreationFlow`, the flow validates it, creates `PetState`, and the renderer
+builds a `DesktopPet` from that state. Runtime features such as actions,
+animation playback, and sprite atlas rendering stay separate from creation so
+they can be added incrementally without turning the pet class into host or UI
+code. Window behavior is a separate domain entity: size types and size policy
+live under `window`, not under `pet`.
+
+Pet management is not modeled as a separate domain application. It is ordinary
+desktop-app glue: `pet-manager` renders screens and dialogs, `pet-host`
+implements filesystem-backed operations in `PetManagerStateService`, and
+`pet-shared` owns the typed IPC contracts used between them.
+
+Manager host code must stay split by change reason. `PetManagerStateService`
+is only the orchestration facade used by IPC. Manager host files are grouped by
+feature so folders do not become flat piles of services:
+
+```text
+apps/pet-host/src/pet-manager
+├── catalog   Installed pet catalog loading and filtering
+├── commands  State-changing pet commands
+├── state     Current manager state assembly and IPC facade
+└── view      Screen/action view models for the manager frontend
+```
+
+New manager behavior should extend the small service that owns that behavior
+instead of growing one central service or adding a new generic app model.
+
+Inside `pet-overlay`, the pet feature is grouped under one UI boundary:
 
 ```text
 src/app/pet-overlay
-├── domain         Pet model, sprite, animation, and action rules
 ├── host           Renderer bridge to Electron host events
 ├── sprite         Sprite renderers
 └── window         Pet overlay window UI
@@ -94,6 +165,13 @@ pet window bounds. `PetWindowActionController` maps horizontal movement deltas
 to `running-left` or `running-right`, maps hover to the hover animation, and
 maps vertical native window movement to no action. `pet-host` sends typed
 `pet:action-changed` IPC events to `pet-overlay`.
+
+The pet window must not follow the cursor between physical displays. It stays
+on the display where the native window currently is and is only clamped into
+that display's visible work area when screen metrics change. macOS Spaces are
+handled through Electron's visible-on-all-workspaces window policy, so switching
+workspaces on the same display keeps the pet available without moving it to
+another monitor.
 
 The renderer does not read pointer hover or drag state. It only consumes the
 current host action and plays the sprite. `PetAnimationPlayer` owns frame
@@ -121,13 +199,21 @@ builds, so development runs do not register temporary Electron binaries.
 
 ## Packaging
 
-macOS packaging uses `electron-builder.yml` from the repository root. The
-packaging target must build `pet-overlay` in production mode, bundle
-`pet-host`, then run `electron-builder` for macOS. Packaged app files are
-written to `release`. Packaging is exposed only as the Nx project target
-`pet-host:dist-mac`; root `package.json` scripts must not duplicate project
-targets. The generated DMG must expose the app bundle and an `/Applications`
-link so installation is the standard drag-to-Applications flow.
+Release packaging uses `electron-builder.yml` from the repository root. The
+release target must build `pet-overlay` and `pet-manager` in production mode,
+bundle `pet-host`, then run `electron-builder` for macOS and Windows. Packaged
+app files are written to `release`. Packaging is exposed through Nx project
+targets such as `pet-host:dist`, `pet-host:dist-mac`, and `pet-host:dist-win`;
+root `package.json` scripts must not duplicate project targets. The generated
+DMG must expose the app bundle and an `/Applications` link so installation is
+the standard drag-to-Applications flow. Publishing a GitHub Release builds
+macOS `x64` and `arm64` artifacts plus Windows `x64` artifacts on native GitHub
+Actions runners and attaches the installers to that release. Pushes to `main`
+run the same native builds and retain the installers as short-lived workflow
+artifacts without creating a GitHub Release. Packaged application versions come
+from the root `package.json`; release tags are validated against that version.
+Manual release builds accept an existing release tag, build that tagged source,
+and replace the matching GitHub Release assets.
 
 ## Codex Pets compatibility
 
@@ -145,7 +231,7 @@ The active pet file uses:
 
 ```json
 {
-  "activePetId": "eris"
+    "activePetId": "eris"
 }
 ```
 
@@ -153,17 +239,20 @@ The pet manifest uses the Codex Pets `pet.json` fields:
 
 ```json
 {
-  "id": "eris",
-  "displayName": "Eris",
-  "description": "...",
-  "spritesheetPath": "spritesheet.png",
-  "kind": "person"
+    "id": "eris",
+    "displayName": "Eris",
+    "description": "...",
+    "spritesheetPath": "spritesheet.png",
+    "kind": "person"
 }
 ```
 
 Application-specific metadata must not be written into `pet.json`.
 
-The renderer must not receive direct `file://` asset URLs. Local pet assets are exposed through the Electron-owned `pet://asset/...` protocol so Angular can load spritesheets from both the app pet storage and compatible Codex Pets storage.
+The renderer must not receive direct `file://` asset URLs. Local pet assets are
+registered in the Electron host asset registry and exposed through opaque
+`pet://asset?id=...` URLs. The protocol handler only serves file URLs that were
+registered by the host.
 
 Codex Pets spritesheets are rendered with the same fixed sprite atlas contract
 as Codex:

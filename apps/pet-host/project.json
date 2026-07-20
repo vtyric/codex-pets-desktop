@@ -20,7 +20,7 @@
             "options": {
                 "commands": [
                     "pnpm nx build pet-host",
-                    "concurrently -k \"pnpm nx serve pet-overlay\" \"wait-on http://localhost:4200 && PET_OVERLAY_DEV_SERVER_URL=http://localhost:4200 electron dist/apps/pet-host/main.js\""
+                    "concurrently -k \"pnpm nx serve pet-overlay\" \"pnpm nx serve pet-manager\" \"wait-on http://localhost:4200 http://localhost:4300 && PET_OVERLAY_DEV_SERVER_URL=http://localhost:4200 PET_MANAGER_DEV_SERVER_URL=http://localhost:4300 electron dist/apps/pet-host/main.js\""
                 ],
                 "parallel": false
             }
@@ -31,8 +31,35 @@
             "options": {
                 "commands": [
                     "pnpm nx build pet-overlay --configuration production",
+                    "pnpm nx build pet-manager --configuration production",
                     "pnpm nx build pet-host",
-                    "electron-builder --mac --config electron-builder.yml"
+                    "electron-builder --mac --x64 --arm64 --config electron-builder.yml"
+                ],
+                "parallel": false
+            }
+        },
+        "dist-win": {
+            "executor": "nx:run-commands",
+            "outputs": ["{workspaceRoot}/release"],
+            "options": {
+                "commands": [
+                    "pnpm nx build pet-overlay --configuration production",
+                    "pnpm nx build pet-manager --configuration production",
+                    "pnpm nx build pet-host",
+                    "electron-builder --win --x64 --config electron-builder.yml"
+                ],
+                "parallel": false
+            }
+        },
+        "dist": {
+            "executor": "nx:run-commands",
+            "outputs": ["{workspaceRoot}/release"],
+            "options": {
+                "commands": [
+                    "pnpm nx build pet-overlay --configuration production",
+                    "pnpm nx build pet-manager --configuration production",
+                    "pnpm nx build pet-host",
+                    "electron-builder --mac --win --config electron-builder.yml"
                 ],
                 "parallel": false
             }

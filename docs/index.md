@@ -34,4 +34,8 @@ It follows Codex Pets behavior and keeps compatibility with Codex Pets assets an
 
 – `pet-overlay` – Angular renderer for the desktop pet overlay
 
+– `pet-manager` – Angular renderer for pet management screens and dialogs
+
 – `pet-host` – Electron host
+
+– `pet-domain` – pure pet domain models, action rules, animation, atlas, and sprite logic

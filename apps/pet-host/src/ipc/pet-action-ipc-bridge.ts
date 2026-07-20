@@ -1,4 +1,5 @@
 import { PET_ACTION_CHANGED_CHANNEL } from '@codex-pets-desktop/pet-shared';
+import type { Subscription } from 'rxjs';
 import { PetActionEvents } from '../pet/pet-action-events';
 import { PetWindowController } from '../window/pet-window-controller';
 
@@ -8,28 +9,35 @@ interface PetActionIpcBridgeDependencies {
 }
 
 export class PetActionIpcBridge {
-    private unsubscribe: (() => void) | null = null;
+    private subscription: Subscription | null = null;
 
-    constructor(private readonly dependencies: PetActionIpcBridgeDependencies) {}
+    constructor(
+        private readonly dependencies: PetActionIpcBridgeDependencies,
+    ) {}
 
     start(): void {
-        if (this.unsubscribe) {
+        if (this.subscription) {
             return;
         }
 
-        this.unsubscribe = this.dependencies.petActionEvents.subscribe((action) => {
-            const petWindow = this.dependencies.petWindowController.getWindow();
+        this.subscription = this.dependencies.petActionEvents.actions$
+            .pipe()
+            .subscribe((action) => {
+                const petWindow =
+                    this.dependencies.petWindowController.getWindow();
 
-            if (!petWindow || petWindow.isDestroyed()) {
-                return;
-            }
+                if (!petWindow || petWindow.isDestroyed()) {
+                    return;
+                }
 
-            petWindow.webContents.send(PET_ACTION_CHANGED_CHANNEL, { action });
-        });
+                petWindow.webContents.send(PET_ACTION_CHANGED_CHANNEL, {
+                    action,
+                });
+            });
     }
 
     stop(): void {
-        this.unsubscribe?.();
-        this.unsubscribe = null;
+        this.subscription?.unsubscribe();
+        this.subscription = null;
     }
 }

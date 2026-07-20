@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import type { PetState } from '@codex-pets-desktop/pet-shared';
+import type { PetState } from '@codex-pets-desktop/pet-domain';
 import { PetWindowComponent } from './window/pet-window.component';
 
 const browserPreviewPetState: PetState = {

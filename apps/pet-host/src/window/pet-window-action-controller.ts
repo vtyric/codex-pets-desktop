@@ -1,24 +1,17 @@
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
-
-export interface PetWindowMoveDelta {
-    x: number;
-    y: number;
-}
-
-const moveThresholdPx = 4;
+import {
+    PetActionRules,
+    type PetAction,
+    type PetMoveDelta,
+} from '@codex-pets-desktop/pet-domain';
 
 export class PetWindowActionController {
-    getActionForMove(delta: PetWindowMoveDelta): PetAction {
-        const absoluteX = Math.abs(delta.x);
+    private readonly actionRules = new PetActionRules();
 
-        if (absoluteX < moveThresholdPx) {
-            return 'idle';
-        }
-
-        return delta.x < 0 ? 'running-left' : 'running-right';
+    getActionForMove(delta: PetMoveDelta): PetAction {
+        return this.actionRules.getActionForMove(delta);
     }
 
     getActionForHover(isHovered: boolean): PetAction {
-        return isHovered ? 'jumping' : 'idle';
+        return this.actionRules.getActionForHover(isHovered);
     }
 }

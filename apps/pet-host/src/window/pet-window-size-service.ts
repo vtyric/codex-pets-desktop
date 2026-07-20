@@ -1,44 +1,31 @@
-import type { PetWindowSize } from '@codex-pets-desktop/pet-shared';
-
-const atlasCellWidth = 192;
-const atlasCellHeight = 208;
-const defaultPetWindowWidth = 113;
-const minPetWindowWidth = 80;
-const maxPetWindowWidth = 240;
+import {
+    PetWindowSizePolicy,
+    type PetWindowSize,
+} from '@codex-pets-desktop/pet-domain';
 
 export class PetWindowSizeService {
-    private width = defaultPetWindowWidth;
+    private readonly sizePolicy = new PetWindowSizePolicy();
+    private size = this.sizePolicy.getDefaultSize();
 
     getSize(): PetWindowSize {
-        return this.createSize(this.width);
+        return this.size;
     }
 
     getAspectRatio(): number {
-        return atlasCellWidth / atlasCellHeight;
+        return this.sizePolicy.getAspectRatio();
     }
 
     getMinimumSize(): PetWindowSize {
-        return this.createSize(minPetWindowWidth);
+        return this.sizePolicy.getMinimumSize();
     }
 
     getMaximumSize(): PetWindowSize {
-        return this.createSize(maxPetWindowWidth);
+        return this.sizePolicy.getMaximumSize();
     }
 
     updateFromNativeSize(size: PetWindowSize): PetWindowSize {
-        this.width = clamp(size.width, minPetWindowWidth, maxPetWindowWidth);
+        this.size = this.sizePolicy.clampSize(size);
 
         return this.getSize();
     }
-
-    private createSize(width: number): PetWindowSize {
-        return {
-            width,
-            height: Math.ceil((width * atlasCellHeight) / atlasCellWidth),
-        };
-    }
-}
-
-function clamp(value: number, min: number, max: number): number {
-    return Math.min(Math.max(value, min), max);
 }

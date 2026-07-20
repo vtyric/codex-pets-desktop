@@ -1,12 +1,21 @@
 import { BrowserWindow, screen, type Display, type Rectangle } from 'electron';
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
+import type { PetAction } from '@codex-pets-desktop/pet-domain';
+import type { EventEmitter } from 'node:events';
+import {
+    fromEvent,
+    interval,
+    Subject,
+    Subscription,
+    take,
+    takeUntil,
+    timer,
+} from 'rxjs';
 import { PetActionEvents } from '../pet/pet-action-events';
 import { PetWindowActionController } from './pet-window-action-controller';
 import { PetWindowCaptureProtectionService } from './pet-window-capture-protection-service';
 import { PetWindowSizeService } from './pet-window-size-service';
 
 const petWindowScreenMargin = 60;
-const displayTrackingIntervalMs = 100;
 const hoverTrackingIntervalMs = 100;
 const actionResetDelayMs = 180;
 
@@ -20,14 +29,16 @@ interface PetWindowControllerOptions {
 
 export class PetWindowController {
     private petWindow: BrowserWindow | null = null;
-    private displayTrackingInterval: NodeJS.Timeout | null = null;
-    private hoverTrackingInterval: NodeJS.Timeout | null = null;
-    private actionResetTimeout: NodeJS.Timeout | null = null;
-    private lastTargetDisplayId: number | null = null;
+    private actionResetSubscription: Subscription | null = null;
+    private hoverTrackingSubscription: Subscription | null = null;
+    private nativeWindowSubscription: Subscription | null = null;
+    private readonly hoverTrackingStopped$ = new Subject<void>();
+    private windowClosed$ = new Subject<void>();
     private lastWindowPosition: { x: number; y: number } | null = null;
     private suppressMoveAction = false;
     private isMovementActionActive = false;
     private isHovered = false;
+    private shouldShowPet = true;
     private currentAction: PetAction = 'idle';
 
     constructor(private readonly options: PetWindowControllerOptions) {}
@@ -61,34 +72,12 @@ export class PetWindowController {
                 backgroundThrottling: false,
             },
         });
+        this.windowClosed$ = new Subject<void>();
 
         this.options.captureProtection.apply(this.petWindow);
         this.applyNativeResizePolicy();
         this.applyOverlayWindowPolicy();
-        this.petWindow.once('ready-to-show', () => {
-            if (!this.petWindow) {
-                return;
-            }
-
-            this.options.captureProtection.apply(this.petWindow);
-            this.applyNativeResizePolicy();
-            this.applyOverlayWindowPolicy();
-            this.petWindow.showInactive();
-        });
-        this.petWindow.once('closed', () => {
-            this.petWindow = null;
-            this.lastTargetDisplayId = null;
-            this.lastWindowPosition = null;
-            this.clearActionResetTimeout();
-            this.stopHoverTracking();
-        });
-        this.petWindow.on('move', () => {
-            this.handleWindowMove();
-        });
-        this.petWindow.on('resize', () => {
-            this.handleWindowResize();
-        });
-        this.lastTargetDisplayId = targetDisplay.id;
+        this.subscribeToNativeWindowEvents(this.petWindow);
 
         return this.petWindow;
     }
@@ -97,24 +86,29 @@ export class PetWindowController {
         return this.petWindow;
     }
 
-    startDisplayTracking(): void {
-        if (this.displayTrackingInterval) {
-            return;
-        }
+    isPetVisible(): boolean {
+        return this.shouldShowPet && (this.petWindow?.isVisible() ?? false);
+    }
 
-        this.displayTrackingInterval = setInterval(() => {
-            this.followUserDisplay();
-        }, displayTrackingIntervalMs);
+    hidePetWindow(): void {
+        this.shouldShowPet = false;
+        this.petWindow?.hide();
+    }
+
+    showPetWindow(): void {
+        this.shouldShowPet = true;
+        this.petWindow?.showInactive();
+    }
+
+    reloadPetWindow(): void {
+        this.petWindow?.webContents.reloadIgnoringCache();
+    }
+
+    startDisplayTracking(): void {
         this.startHoverTracking();
     }
 
     stopDisplayTracking(): void {
-        if (!this.displayTrackingInterval) {
-            return;
-        }
-
-        clearInterval(this.displayTrackingInterval);
-        this.displayTrackingInterval = null;
         this.stopHoverTracking();
     }
 
@@ -140,43 +134,6 @@ export class PetWindowController {
         if (bounds.x !== nextX || bounds.y !== nextY) {
             this.petWindow.setPosition(nextX, nextY, false);
         }
-    }
-
-    private followUserDisplay(): void {
-        if (!this.petWindow) {
-            return;
-        }
-
-        const targetDisplay = this.getUserDisplay();
-
-        if (this.lastTargetDisplayId === targetDisplay.id) {
-            return;
-        }
-
-        this.moveToDisplay(targetDisplay);
-    }
-
-    private moveToDisplay(display: Display): void {
-        if (!this.petWindow) {
-            return;
-        }
-
-        const nextBounds = this.getPetBoundsForDisplay(display);
-
-        this.lastTargetDisplayId = display.id;
-        this.applyOverlayWindowPolicy();
-        this.suppressMoveAction = true;
-        this.petWindow.setBounds(nextBounds, false);
-        this.lastWindowPosition = {
-            x: nextBounds.x,
-            y: nextBounds.y,
-        };
-        setTimeout(() => {
-            this.suppressMoveAction = false;
-        }, 0);
-        this.petWindow.showInactive();
-        this.petWindow.moveTop();
-        this.applyOverlayWindowPolicy();
     }
 
     private applyOverlayWindowPolicy(): void {
@@ -232,9 +189,11 @@ export class PetWindowController {
             x: nextBounds.x,
             y: nextBounds.y,
         };
-        setTimeout(() => {
-            this.suppressMoveAction = false;
-        }, 0);
+        timer(0)
+            .pipe(takeUntil(this.windowClosed$))
+            .subscribe(() => {
+                this.suppressMoveAction = false;
+            });
     }
 
     private getPetBoundsForDisplay(display: Display): Rectangle {
@@ -244,11 +203,7 @@ export class PetWindowController {
         return {
             width: size.width,
             height: size.height,
-            x:
-                workArea.x +
-                workArea.width -
-                size.width -
-                petWindowScreenMargin,
+            x: workArea.x + workArea.width - size.width - petWindowScreenMargin,
             y:
                 workArea.y +
                 workArea.height -
@@ -299,41 +254,56 @@ export class PetWindowController {
     }
 
     private scheduleMovementActionReset(): void {
-        this.clearActionResetTimeout();
-        this.actionResetTimeout = setTimeout(() => {
-            this.actionResetTimeout = null;
-            this.isMovementActionActive = false;
-            this.emitHoverAction();
-        }, actionResetDelayMs);
+        this.clearActionResetSubscription();
+        this.actionResetSubscription = timer(actionResetDelayMs)
+            .pipe(takeUntil(this.windowClosed$))
+            .subscribe(() => {
+                this.actionResetSubscription = null;
+                this.isMovementActionActive = false;
+                this.emitHoverAction();
+            });
     }
 
-    private clearActionResetTimeout(): void {
-        if (!this.actionResetTimeout) {
+    private clearActionResetSubscription(): void {
+        if (!this.actionResetSubscription) {
             return;
         }
 
-        clearTimeout(this.actionResetTimeout);
-        this.actionResetTimeout = null;
+        this.actionResetSubscription.unsubscribe();
+        this.actionResetSubscription = null;
     }
 
     private startHoverTracking(): void {
-        if (this.hoverTrackingInterval) {
+        if (this.hoverTrackingSubscription) {
             return;
         }
 
-        this.hoverTrackingInterval = setInterval(() => {
-            this.updateHoverAction();
-        }, hoverTrackingIntervalMs);
-        this.updateHoverAction();
+        this.hoverTrackingSubscription = interval(hoverTrackingIntervalMs)
+            .pipe(
+                takeUntil(this.hoverTrackingStopped$),
+                takeUntil(this.windowClosed$),
+            )
+            .subscribe(() => {
+                this.updateHoverAction();
+            });
+        timer(0)
+            .pipe(
+                takeUntil(this.hoverTrackingStopped$),
+                takeUntil(this.windowClosed$),
+            )
+            .subscribe(() => {
+                this.updateHoverAction();
+            });
     }
 
     private stopHoverTracking(): void {
-        if (!this.hoverTrackingInterval) {
+        if (!this.hoverTrackingSubscription) {
             return;
         }
 
-        clearInterval(this.hoverTrackingInterval);
-        this.hoverTrackingInterval = null;
+        this.hoverTrackingStopped$.next();
+        this.hoverTrackingSubscription.unsubscribe();
+        this.hoverTrackingSubscription = null;
     }
 
     private updateHoverAction(): void {
@@ -376,6 +346,57 @@ export class PetWindowController {
         );
     }
 
+    private subscribeToNativeWindowEvents(petWindow: BrowserWindow): void {
+        this.nativeWindowSubscription?.unsubscribe();
+        this.nativeWindowSubscription = new Subscription();
+
+        const eventSource = petWindow as EventEmitter;
+
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, 'ready-to-show')
+                .pipe(take(1), takeUntil(this.windowClosed$))
+                .subscribe(() => {
+                    if (!this.petWindow) {
+                        return;
+                    }
+
+                    this.options.captureProtection.apply(this.petWindow);
+                    this.applyNativeResizePolicy();
+                    this.applyOverlayWindowPolicy();
+                    if (this.shouldShowPet) {
+                        this.petWindow.showInactive();
+                    }
+                }),
+        );
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, 'closed')
+                .pipe(take(1))
+                .subscribe(() => {
+                    this.windowClosed$.next();
+                    this.windowClosed$.complete();
+                    this.petWindow = null;
+                    this.lastWindowPosition = null;
+                    this.clearActionResetSubscription();
+                    this.stopHoverTracking();
+                    this.nativeWindowSubscription?.unsubscribe();
+                    this.nativeWindowSubscription = null;
+                }),
+        );
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, 'move')
+                .pipe(takeUntil(this.windowClosed$))
+                .subscribe(() => {
+                    this.handleWindowMove();
+                }),
+        );
+        this.nativeWindowSubscription.add(
+            fromEvent(eventSource, 'resize')
+                .pipe(takeUntil(this.windowClosed$))
+                .subscribe(() => {
+                    this.handleWindowResize();
+                }),
+        );
+    }
 }
 
 function clamp(value: number, min: number, max: number): number {

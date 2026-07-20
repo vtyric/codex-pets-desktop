@@ -1,11 +1,5 @@
-import {
-    Component,
-    OnDestroy,
-    OnInit,
-    inject,
-    input,
-} from '@angular/core';
-import { DesktopPet } from '../../domain/desktop-pet';
+import { Component, OnDestroy, OnInit, inject, input } from '@angular/core';
+import { DesktopPet } from '@codex-pets-desktop/pet-domain';
 import { PetResizeHandleComponent } from '../resize/pet-resize-handle.component';
 import { PetSpriteAtlasViewService } from './pet-sprite-atlas-view.service';
 

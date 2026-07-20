@@ -1,21 +1,10 @@
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
+import type { PetAction } from '@codex-pets-desktop/pet-domain';
+import { Subject, type Observable } from 'rxjs';
 
-type PetActionListener = (action: PetAction) => void;
-
-export class PetActionEvents {
-    private readonly listeners = new Set<PetActionListener>();
+export class PetActionEvents extends Subject<PetAction> {
+    readonly actions$: Observable<PetAction> = this.asObservable();
 
     emit(action: PetAction): void {
-        for (const listener of this.listeners) {
-            listener(action);
-        }
-    }
-
-    subscribe(listener: PetActionListener): () => void {
-        this.listeners.add(listener);
-
-        return () => {
-            this.listeners.delete(listener);
-        };
+        this.next(action);
     }
 }
