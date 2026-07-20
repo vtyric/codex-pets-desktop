@@ -1,4 +1,4 @@
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
+import type { PetAction } from '../runtime/pet-types';
 
 export interface PetAnimationFrame {
     action: PetAction;

@@ -1,6 +1,6 @@
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
-import { PetAnimationPlayer } from './pet-animation-player';
-import type { PetAnimationFrame } from './pet-animation-frame';
+import type { PetAnimationFrame } from '../animation/pet-animation-frame';
+import { PetAnimationPlayer } from '../animation/pet-animation-player';
+import type { PetAction } from '../runtime/pet-types';
 import { PetSpriteAtlas } from './pet-sprite-atlas';
 
 export class PetSprite {

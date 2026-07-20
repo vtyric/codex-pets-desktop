@@ -1,5 +1,8 @@
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
-import type { PetAnimationFrame, PetAnimationState } from './pet-animation-frame';
+import type { PetAction } from '../runtime/pet-types';
+import type {
+    PetAnimationFrame,
+    PetAnimationState,
+} from './pet-animation-frame';
 
 const actionRepeatCount = 3;
 const slowIdleDurationMultiplier = 6;

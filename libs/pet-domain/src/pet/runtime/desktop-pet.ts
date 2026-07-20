@@ -1,6 +1,6 @@
-import type { PetAction, PetState } from '@codex-pets-desktop/pet-shared';
-import type { PetAnimationFrame } from './pet-animation-frame';
-import { PetSprite } from './pet-sprite';
+import type { PetAction, PetState } from './pet-types';
+import type { PetAnimationFrame } from '../animation/pet-animation-frame';
+import { PetSprite } from '../sprite/pet-sprite';
 
 export class DesktopPet {
     readonly id: string;
