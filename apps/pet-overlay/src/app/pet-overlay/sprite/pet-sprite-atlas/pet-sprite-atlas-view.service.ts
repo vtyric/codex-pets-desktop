@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
-import { DesktopPet } from '../../domain/desktop-pet';
+import { DesktopPet, type PetAction } from '@codex-pets-desktop/pet-domain';
+import { Subscription, timer } from 'rxjs';
 import { PetHostActionService } from '../../host/pet-host-action.service';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class PetSpriteAtlasViewService {
     private readonly hostActionService = inject(PetHostActionService);
     private readonly pet = signal<DesktopPet | null>(null);
     private readonly frameIndex = signal(0);
-    private animationTimeoutId: number | null = null;
+    private animationSubscription: Subscription | null = null;
     private currentAction: PetAction | null = null;
 
     private readonly renderPet = computed(() => {
@@ -16,8 +16,8 @@ export class PetSpriteAtlasViewService {
 
         return pet ? pet.withAction(this.hostActionService.action()) : null;
     });
-    private readonly animationFrame = computed(() =>
-        this.renderPet()?.getAnimationFrame(this.frameIndex()) ?? null,
+    private readonly animationFrame = computed(
+        () => this.renderPet()?.getAnimationFrame(this.frameIndex()) ?? null,
     );
 
     readonly action = computed(() => this.animationFrame()?.action ?? 'idle');
@@ -26,8 +26,10 @@ export class PetSpriteAtlasViewService {
 
         return spritesheetUrl ? `url("${spritesheetUrl}")` : '';
     });
-    readonly backgroundPosition = computed(() =>
-        this.renderPet()?.getBackgroundPosition(this.frameIndex()) ?? '0% 0%',
+    readonly backgroundPosition = computed(
+        () =>
+            this.renderPet()?.getBackgroundPosition(this.frameIndex()) ??
+            '0% 0%',
     );
 
     constructor() {
@@ -41,7 +43,7 @@ export class PetSpriteAtlasViewService {
     }
 
     start(): void {
-        if (this.animationTimeoutId !== null) {
+        if (this.animationSubscription !== null) {
             return;
         }
 
@@ -49,20 +51,22 @@ export class PetSpriteAtlasViewService {
     }
 
     stop(): void {
-        if (this.animationTimeoutId === null) {
+        if (this.animationSubscription === null) {
             return;
         }
 
-        window.clearTimeout(this.animationTimeoutId);
-        this.animationTimeoutId = null;
+        this.animationSubscription.unsubscribe();
+        this.animationSubscription = null;
     }
 
     private scheduleNextFrame(): void {
-        this.animationTimeoutId = window.setTimeout(() => {
-            this.advanceFrame();
-            this.animationTimeoutId = null;
-            this.scheduleNextFrame();
-        }, this.getCurrentFrameDurationMs());
+        this.animationSubscription = timer(this.getCurrentFrameDurationMs())
+            .pipe()
+            .subscribe(() => {
+                this.advanceFrame();
+                this.animationSubscription = null;
+                this.scheduleNextFrame();
+            });
     }
 
     private applyActionTransition(action: PetAction): void {
@@ -76,12 +80,12 @@ export class PetSpriteAtlasViewService {
     }
 
     private restartTimer(): void {
-        if (this.animationTimeoutId === null) {
+        if (this.animationSubscription === null) {
             return;
         }
 
-        window.clearTimeout(this.animationTimeoutId);
-        this.animationTimeoutId = null;
+        this.animationSubscription.unsubscribe();
+        this.animationSubscription = null;
         this.scheduleNextFrame();
     }
 
@@ -92,5 +96,4 @@ export class PetSpriteAtlasViewService {
     private advanceFrame(): void {
         this.frameIndex.update((frameIndex) => frameIndex + 1);
     }
-
 }

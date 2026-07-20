@@ -1,0 +1,42 @@
+$manager-spacing-2xs: 2px;
+$manager-spacing-sm: 6px;
+$manager-spacing-md: 8px;
+$manager-spacing-lg: 10px;
+$manager-spacing-xl: 12px;
+$manager-spacing-2xl: 16px;
+$manager-spacing-3xl: 18px;
+$manager-spacing-4xl: 20px;
+$manager-spacing-5xl: 24px;
+
+$manager-radius-sm: 6px;
+$manager-radius-md: 8px;
+
+$manager-border-width: 1px;
+$manager-focus-ring-width: 2px;
+
+$manager-preview-width-md: 72px;
+$manager-delete-dialog-width: 420px;
+
+$manager-font-size-xs: 0.72rem;
+$manager-font-size-base: 0.875rem;
+$manager-font-size-lg: 0.95rem;
+$manager-font-size-xl: 1rem;
+$manager-font-size-2xl: 1.25rem;
+
+$manager-line-height-base: 1.3;
+
+$manager-atlas-aspect-ratio: calc(192 / 208);
+$manager-atlas-background-size: 800% 900%;
+$manager-empty-preview-line-start: 46%;
+$manager-empty-preview-line-mid-start: 47%;
+$manager-empty-preview-line-mid-end: 53%;
+$manager-empty-preview-line-end: 54%;
+
+$manager-surface: var(--p-content-background, #ffffff);
+$manager-surface-alt: var(--manager-surface-alt);
+$manager-page-background: var(--manager-page-background);
+$manager-border-color: var(--p-content-border-color, #d0d7e2);
+$manager-border-muted-color: var(--manager-border-muted-color);
+$manager-text-color: var(--p-text-color, #0f172a);
+$manager-muted-text-color: var(--p-text-muted-color, #64748b);
+$manager-primary-color: var(--p-primary-color, #2563eb);

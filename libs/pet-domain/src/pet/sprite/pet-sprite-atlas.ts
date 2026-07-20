@@ -1,4 +1,4 @@
-import type { PetAnimationFrame } from './pet-animation-frame';
+import type { PetAnimationFrame } from '../animation/pet-animation-frame';
 
 const atlasColumnCount = 8;
 const atlasRowCount = 9;

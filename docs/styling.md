@@ -14,6 +14,7 @@ Shared SCSS files live here:
 
 ```text
 apps/pet-overlay/src/styles
+apps/pet-manager/src/styles
 ```
 
 Base files:
@@ -28,19 +29,21 @@ apps/pet-overlay/src/styles
 
 ## Nx Angular setup
 
-`apps/pet-overlay/project.json` must include the shared styles path in the build target.
+Angular app project files can include their shared styles path in the build
+target when the builder supports it. Otherwise component styles must import the
+shared SCSS file by a relative path.
 
 ```json
 {
-  "targets": {
-    "build": {
-      "options": {
-        "stylePreprocessorOptions": {
-          "includePaths": ["apps/pet-overlay/src/styles"]
+    "targets": {
+        "build": {
+            "options": {
+                "stylePreprocessorOptions": {
+                    "includePaths": ["apps/<app-name>/src/styles"]
+                }
+            }
         }
-      }
     }
-  }
 }
 ```
 
@@ -72,6 +75,10 @@ Use variables for:
 
 – breakpoints
 
+`pet-manager` supports system, light, and dark theme modes. PrimeNG dark mode is
+controlled by the `app-dark` class, and system mode must mirror
+`prefers-color-scheme` instead of forcing a hardcoded theme at bootstrap.
+
 Example:
 
 ```scss
@@ -98,9 +105,9 @@ Do not write this:
 
 ```scss
 .pet {
-  width: 160px;
-  height: 160px;
-  border-radius: 10px;
+    width: 160px;
+    height: 160px;
+    border-radius: 10px;
 }
 ```
 
@@ -110,9 +117,9 @@ Write this:
 @use 'variables' as *;
 
 .pet {
-  width: $pet-size-md;
-  height: $pet-size-md;
-  border-radius: $radius-md;
+    width: $pet-size-md;
+    height: $pet-size-md;
+    border-radius: $radius-md;
 }
 ```
 
@@ -122,11 +129,11 @@ Drag regions must also use SCSS.
 
 ```scss
 @mixin drag-region {
-  -webkit-app-region: drag;
+    -webkit-app-region: drag;
 }
 
 @mixin no-drag-region {
-  -webkit-app-region: no-drag;
+    -webkit-app-region: no-drag;
 }
 ```
 
@@ -136,11 +143,11 @@ Usage:
 @use 'mixins' as *;
 
 .pet-window {
-  @include drag-region;
+    @include drag-region;
 }
 
 .pet-button {
-  @include no-drag-region;
+    @include no-drag-region;
 }
 ```
 
@@ -166,3 +173,10 @@ pet-view
 Every new visual value must be added to the shared SCSS layer first.
 
 Components must use shared SCSS variables instead of local hardcoded design values.
+
+## Pet manager scrolling
+
+The `pet-manager` page and Angular root elements are fixed to the native window
+height and must not own page scrolling. The installed-pets list owns vertical
+scrolling and consumes the remaining shell height, while the toolbar, actions,
+add form, and search remain visible.

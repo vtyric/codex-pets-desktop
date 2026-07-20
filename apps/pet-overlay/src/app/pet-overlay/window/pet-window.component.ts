@@ -1,6 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import type { PetState } from '@codex-pets-desktop/pet-shared';
-import { DesktopPet } from '../domain/desktop-pet';
+import { DesktopPet, type PetState } from '@codex-pets-desktop/pet-domain';
 import { FallbackPetSpriteComponent } from '../sprite/fallback-pet-sprite/fallback-pet-sprite.component';
 import { PetSpriteAtlasComponent } from '../sprite/pet-sprite-atlas/pet-sprite-atlas.component';
 

@@ -1,0 +1,95 @@
+{
+    "name": "pet-manager",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "prefix": "app",
+    "sourceRoot": "apps/pet-manager/src",
+    "tags": [],
+    "targets": {
+        "build": {
+            "executor": "@angular/build:application",
+            "outputs": ["{options.outputPath}"],
+            "defaultConfiguration": "production",
+            "options": {
+                "outputPath": "dist/apps/pet-manager",
+                "index": "apps/pet-manager/src/index.html",
+                "browser": "apps/pet-manager/src/main.ts",
+                "polyfills": ["@angular/localize/init"],
+                "tsConfig": "apps/pet-manager/tsconfig.app.json",
+                "inlineStyleLanguage": "scss",
+                "baseHref": "./",
+                "assets": [
+                    {
+                        "glob": "**/*",
+                        "input": "apps/pet-manager/public"
+                    }
+                ],
+                "styles": [
+                    "node_modules/primeicons/primeicons.css",
+                    "apps/pet-manager/src/styles.scss"
+                ]
+            },
+            "configurations": {
+                "production": {
+                    "budgets": [
+                        {
+                            "type": "initial",
+                            "maximumWarning": "700kb",
+                            "maximumError": "1.2mb"
+                        },
+                        {
+                            "type": "anyComponentStyle",
+                            "maximumWarning": "6kb",
+                            "maximumError": "10kb"
+                        }
+                    ],
+                    "outputHashing": "all"
+                },
+                "development": {
+                    "optimization": false,
+                    "extractLicenses": false,
+                    "sourceMap": true
+                }
+            }
+        },
+        "serve": {
+            "continuous": true,
+            "executor": "@angular/build:dev-server",
+            "defaultConfiguration": "development",
+            "options": {
+                "port": 4300
+            },
+            "configurations": {
+                "production": {
+                    "buildTarget": "pet-manager:build:production"
+                },
+                "development": {
+                    "buildTarget": "pet-manager:build:development"
+                }
+            }
+        },
+        "lint": {
+            "inputs": [
+                "default",
+                "^default",
+                "{workspaceRoot}/.eslintrc.json",
+                "{workspaceRoot}/.eslintignore",
+                "{workspaceRoot}/eslint.config.mjs",
+                "{workspaceRoot}/tools/eslint-rules/**/*",
+                {
+                    "externalDependencies": ["eslint"]
+                }
+            ]
+        },
+        "serve-static": {
+            "continuous": true,
+            "executor": "@nx/web:file-server",
+            "options": {
+                "buildTarget": "pet-manager:build",
+                "staticFilePath": "dist/apps/pet-manager/browser",
+                "spa": true,
+                "port": 4300
+            }
+        }
+    }
+}

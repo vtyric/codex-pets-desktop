@@ -1,10 +1,21 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, screen } from 'electron';
+import type { EventEmitter } from 'node:events';
+import { fromEvent, merge, Subscription, take } from 'rxjs';
 import { PetActionIpcBridge } from '../ipc/pet-action-ipc-bridge';
 import { PetIpcService } from '../ipc/pet-ipc-service';
+import { PetManagerIpcService } from '../ipc/pet-manager-ipc-service';
 import { PetAssetProtocolService } from '../pet/pet-asset-protocol';
 import { PetStore } from '../pet/pet-store';
 import { PetLoginItemService } from './pet-login-item-service';
+import { PetManagerWindowController } from '../window/pet-manager-window-controller';
 import { PetWindowController } from '../window/pet-window-controller';
+import {
+    electronAppEvents,
+    electronDevToolsModes,
+    electronScreenEvents,
+    petHostApplicationMessages,
+} from './pet-host-application.constants';
+import { petHostPlatforms } from '../platform/pet-host-platform.constants';
 
 interface PetHostApplicationDependencies {
     overlayDevServerUrl: string | undefined;
@@ -13,12 +24,18 @@ interface PetHostApplicationDependencies {
     petAssetProtocolService: PetAssetProtocolService;
     petIpcService: PetIpcService;
     petLoginItemService: PetLoginItemService;
+    petManagerIpcService: PetManagerIpcService;
+    petManagerWindowController: PetManagerWindowController;
     petStore: PetStore;
     petWindowController: PetWindowController;
 }
 
 export class PetHostApplication {
-    constructor(private readonly dependencies: PetHostApplicationDependencies) {}
+    private readonly electronEventSubscription = new Subscription();
+
+    constructor(
+        private readonly dependencies: PetHostApplicationDependencies,
+    ) {}
 
     start(): void {
         this.dependencies.petAssetProtocolService.registerScheme();
@@ -32,35 +49,72 @@ export class PetHostApplication {
                 app.quit();
             });
 
-        app.on('window-all-closed', () => {
-            this.dependencies.petActionIpcBridge.stop();
-            this.dependencies.petWindowController.stopDisplayTracking();
+        this.electronEventSubscription.add(
+            fromEvent(app as EventEmitter, electronAppEvents.beforeQuit)
+                .pipe(take(1))
+                .subscribe(() => {
+                    this.dependencies.petManagerWindowController.prepareForAppQuit();
+                }),
+        );
+        this.electronEventSubscription.add(
+            fromEvent(app as EventEmitter, electronAppEvents.windowAllClosed)
+                .pipe()
+                .subscribe(() => {
+                    this.dependencies.petActionIpcBridge.stop();
+                    this.dependencies.petWindowController.stopDisplayTracking();
 
-            if (process.platform !== 'darwin') {
-                app.quit();
-            }
-        });
+                    if (process.platform !== petHostPlatforms.macOS) {
+                        app.quit();
+                    }
+                }),
+        );
     }
 
     private startReadyApplication(): void {
-        this.dependencies.petAssetProtocolService.handle(
-            this.dependencies.petStore.getCompatiblePetsDirectoryPaths(),
-        );
+        this.dependencies.petAssetProtocolService.handle();
         this.dependencies.petIpcService.registerHandlers();
+        this.dependencies.petManagerIpcService.registerHandlers();
         this.dependencies.petLoginItemService.enableOpenAtLogin();
         this.dependencies.petActionIpcBridge.start();
         this.createPetWindow();
+        this.dependencies.petManagerWindowController.openManagerWindow();
         this.dependencies.petWindowController.startDisplayTracking();
 
-        screen.on('display-added', this.keepPetWindowInVisibleWorkArea);
-        screen.on('display-removed', this.keepPetWindowInVisibleWorkArea);
-        screen.on('display-metrics-changed', this.keepPetWindowInVisibleWorkArea);
+        this.electronEventSubscription.add(
+            merge(
+                fromEvent(
+                    screen as EventEmitter,
+                    electronScreenEvents.displayAdded,
+                ),
+                fromEvent(
+                    screen as EventEmitter,
+                    electronScreenEvents.displayRemoved,
+                ),
+                fromEvent(
+                    screen as EventEmitter,
+                    electronScreenEvents.displayMetricsChanged,
+                ),
+            )
+                .pipe()
+                .subscribe(() => {
+                    this.keepPetWindowInVisibleWorkArea();
+                }),
+        );
 
-        app.on('activate', () => {
-            if (BrowserWindow.getAllWindows().length === 0) {
-                this.createPetWindow();
-            }
-        });
+        this.electronEventSubscription.add(
+            fromEvent(app as EventEmitter, electronAppEvents.activate)
+                .pipe()
+                .subscribe(() => {
+                    const petWindow =
+                        this.dependencies.petWindowController.getWindow();
+
+                    if (petWindow === null || petWindow.isDestroyed()) {
+                        this.createPetWindow();
+                    }
+
+                    this.dependencies.petManagerWindowController.openManagerWindow();
+                }),
+        );
     }
 
     private readonly keepPetWindowInVisibleWorkArea = (): void => {
@@ -68,13 +122,16 @@ export class PetHostApplication {
     };
 
     private createPetWindow(): void {
-        const petWindow = this.dependencies.petWindowController.createPetWindow();
+        const petWindow =
+            this.dependencies.petWindowController.createPetWindow();
 
         if (this.dependencies.overlayDevServerUrl) {
             void petWindow
                 .loadURL(this.dependencies.overlayDevServerUrl)
                 .catch(this.handlePetWindowLoadFailure);
-            petWindow.webContents.openDevTools({ mode: 'detach' });
+            petWindow.webContents.openDevTools({
+                mode: electronDevToolsModes.detach,
+            });
             return;
         }
 
@@ -84,6 +141,9 @@ export class PetHostApplication {
     }
 
     private readonly handlePetWindowLoadFailure = (error: unknown): void => {
-        console.error('Failed to load pet overlay renderer.', error);
+        console.error(
+            petHostApplicationMessages.overlayRendererLoadFailed,
+            error,
+        );
     };
 }

@@ -3,32 +3,43 @@ productName: Codex Pets Desktop
 artifactName: '${productName}-${version}-${os}-${arch}.${ext}'
 
 directories:
-  output: release
+    output: release
 
 files:
-  - package.json
-  - dist/apps/pet-host/main.js
-  - dist/apps/pet-host/preload.js
-  - dist/apps/pet-overlay/browser/**/*
+    - package.json
+    - dist/apps/pet-host/main.js
+    - dist/apps/pet-host/preload.js
+    - dist/apps/pet-overlay/browser/**/*
+    - dist/apps/pet-manager/browser/**/*
 
 extraMetadata:
-  main: dist/apps/pet-host/main.js
+    main: dist/apps/pet-host/main.js
 
 asar: true
 
 mac:
-  category: public.app-category.entertainment
-  target:
-    - dmg
-    - zip
-  identity: null
+    category: public.app-category.entertainment
+    target:
+        - dmg
+        - zip
+    identity: null
+
+win:
+    target:
+        - nsis
+        - zip
+
+nsis:
+    oneClick: false
+    perMachine: false
+    allowToChangeInstallationDirectory: true
 
 dmg:
-  contents:
-    - x: 130
-      y: 220
-      type: file
-    - x: 410
-      y: 220
-      type: link
-      path: /Applications
+    contents:
+        - x: 130
+          y: 220
+          type: file
+        - x: 410
+          y: 220
+          type: link
+          path: /Applications

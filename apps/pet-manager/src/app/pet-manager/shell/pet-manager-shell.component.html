@@ -1,0 +1,269 @@
+<main class="manager-shell">
+    <p-toolbar class="manager-toolbar">
+        <ng-template #start>
+            <div class="manager-title">
+                <span class="manager-title__text">
+                    <ng-container i18n="@@petManagerTitle">Pets</ng-container>
+                </span>
+                <span class="manager-title__meta">
+                    <ng-container i18n="@@petManagerInstalledCount">
+                        {{ manager.installedPetsCount() }} installed
+                    </ng-container>
+                </span>
+            </div>
+        </ng-template>
+
+        <ng-template #end>
+            <div class="manager-toolbar-control">
+                <span
+                    class="manager-toolbar-control__icon pi pi-language"
+                    aria-hidden="true"
+                ></span>
+                <p-select
+                    class="manager-toolbar-select"
+                    ariaLabel="Language"
+                    i18n-ariaLabel="@@petManagerLanguageSelectLabel"
+                    optionLabel="label"
+                    optionValue="code"
+                    appendTo="body"
+                    [options]="manager.languageOptions"
+                    [ngModel]="manager.languageCode()"
+                    (ngModelChange)="manager.updateLanguage($event)"
+                >
+                    <ng-template #selectedItem let-language>
+                        <span class="manager-select-value">
+                            <span class="manager-select-value__badge">{{
+                                language.icon
+                            }}</span>
+                            <span>{{ language.label }}</span>
+                        </span>
+                    </ng-template>
+                    <ng-template #item let-language>
+                        <span class="manager-select-value">
+                            <span class="manager-select-value__badge">{{
+                                language.icon
+                            }}</span>
+                            <span>{{ language.label }}</span>
+                        </span>
+                    </ng-template>
+                </p-select>
+            </div>
+
+            <div class="manager-toolbar-control">
+                <p-select
+                    class="manager-toolbar-select"
+                    ariaLabel="Theme"
+                    i18n-ariaLabel="@@petManagerThemeSelectLabel"
+                    optionLabel="label"
+                    optionValue="mode"
+                    appendTo="body"
+                    [options]="manager.themeOptions"
+                    [ngModel]="manager.themeMode()"
+                    (ngModelChange)="manager.updateThemeMode($event)"
+                >
+                    <ng-template #selectedItem let-theme>
+                        <span class="manager-select-value">
+                            <span
+                                [class]="theme.icon"
+                                aria-hidden="true"
+                            ></span>
+                            <span>
+                                @switch (theme.mode) {
+                                    @case ('light') {
+                                        <ng-container
+                                            i18n="@@petManagerThemeLight"
+                                            >Light</ng-container
+                                        >
+                                    }
+                                    @case ('dark') {
+                                        <ng-container
+                                            i18n="@@petManagerThemeDark"
+                                            >Dark</ng-container
+                                        >
+                                    }
+                                }
+                            </span>
+                        </span>
+                    </ng-template>
+                    <ng-template #item let-theme>
+                        <span class="manager-select-value">
+                            <span
+                                [class]="theme.icon"
+                                aria-hidden="true"
+                            ></span>
+                            <span>
+                                @switch (theme.mode) {
+                                    @case ('light') {
+                                        <ng-container
+                                            i18n="@@petManagerThemeLight"
+                                            >Light</ng-container
+                                        >
+                                    }
+                                    @case ('dark') {
+                                        <ng-container
+                                            i18n="@@petManagerThemeDark"
+                                            >Dark</ng-container
+                                        >
+                                    }
+                                }
+                            </span>
+                        </span>
+                    </ng-template>
+                </p-select>
+            </div>
+        </ng-template>
+    </p-toolbar>
+
+    <div class="manager-actions-row">
+        @for (action of manager.appActions(); track action.id) {
+            @switch (action.command.kind) {
+                @case ('hide-running-pet') {
+                    <p-button
+                        icon="pi pi-eye-slash"
+                        label="Hide pet"
+                        i18n-label="@@petManagerHidePetAction"
+                        severity="secondary"
+                        size="small"
+                        (onClick)="manager.runAction(action)"
+                    />
+                }
+                @case ('show-running-pet') {
+                    <p-button
+                        icon="pi pi-eye"
+                        label="Show pet"
+                        i18n-label="@@petManagerShowPetAction"
+                        severity="secondary"
+                        size="small"
+                        (onClick)="manager.runAction(action)"
+                    />
+                }
+            }
+        }
+    </div>
+
+    <form class="manager-add-pet" (ngSubmit)="manager.addPet()">
+        <div class="manager-add-pet__field">
+            <span
+                class="manager-add-pet__icon pi pi-plus"
+                aria-hidden="true"
+            ></span>
+            <input
+                pInputText
+                type="search"
+                placeholder="npx codex-pets add eris"
+                i18n-placeholder="@@petManagerAddPetPlaceholder"
+                [disabled]="manager.isAddingPet()"
+                [ngModel]="manager.addPetCommand()"
+                name="addPetCommand"
+                (ngModelChange)="manager.updateAddPetCommand($event)"
+            />
+        </div>
+        <p-button
+            icon="pi pi-download"
+            label="Add pet"
+            i18n-label="@@petManagerAddPetAction"
+            type="submit"
+            [disabled]="
+                manager.addPetCommand().trim().length === 0 ||
+                manager.isAddingPet()
+            "
+            [loading]="manager.isAddingPet()"
+        />
+    </form>
+    @if (manager.addPetError(); as addPetError) {
+        <p class="manager-add-pet__error">{{ addPetError }}</p>
+    }
+
+    <div class="manager-search">
+        <span
+            class="manager-search__icon pi pi-search"
+            aria-hidden="true"
+        ></span>
+        <input
+            pInputText
+            type="search"
+            placeholder="Search pets"
+            i18n-placeholder="@@petManagerSearchPlaceholder"
+            [ngModel]="manager.searchQuery()"
+            (ngModelChange)="manager.updateSearchQuery($event)"
+        />
+    </div>
+
+    <section
+        class="pet-list"
+        aria-label="Installed pets"
+        i18n-aria-label="@@petManagerInstalledPetsRegionLabel"
+    >
+        @for (item of manager.filteredListItems(); track item.petId) {
+            <p-card class="pet-card">
+                <div class="pet-card__content">
+                    <button
+                        class="pet-card__select"
+                        type="button"
+                        [class.pet-card__select--active]="item.badge !== null"
+                        [disabled]="item.badge !== null"
+                        (click)="manager.selectPet(item)"
+                    >
+                        <span
+                            class="pet-card__preview"
+                            [class.pet-card__preview--empty]="
+                                manager.previewUrlFor(item.petId) === null
+                            "
+                            [style.background-image]="
+                                manager.previewUrlFor(item.petId) === null
+                                    ? null
+                                    : 'url(' +
+                                      manager.previewUrlFor(item.petId) +
+                                      ')'
+                            "
+                            aria-hidden="true"
+                        ></span>
+
+                        <span class="pet-card__main">
+                            <span class="pet-card__title-row">
+                                <span class="pet-card__title">{{
+                                    item.title
+                                }}</span>
+                                @if (item.badge) {
+                                    <p-tag
+                                        value="Active"
+                                        i18n-value="@@petManagerActivePetBadge"
+                                        severity="success"
+                                    />
+                                }
+                            </span>
+                            @if (item.subtitle) {
+                                <span class="pet-card__subtitle">{{
+                                    item.subtitle
+                                }}</span>
+                            }
+                        </span>
+                    </button>
+
+                    <div class="pet-card__actions">
+                        <p-menu
+                            #itemMenu
+                            [model]="manager.menuItemsFor(item)"
+                            [popup]="true"
+                            appendTo="body"
+                        />
+                        <p-button
+                            icon="pi pi-ellipsis-v"
+                            severity="secondary"
+                            [rounded]="true"
+                            [text]="true"
+                            (onClick)="itemMenu.toggle($event)"
+                        />
+                    </div>
+                </div>
+            </p-card>
+        } @empty {
+            <p-card class="empty-card">
+                <h2 i18n="@@petManagerNoPetsFoundTitle">No pets found</h2>
+                <p i18n="@@petManagerNoPetsFoundMessage">
+                    Change the search query or sync pets from Codex.
+                </p>
+            </p-card>
+        }
+    </section>
+</main>

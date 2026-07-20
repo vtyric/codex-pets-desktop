@@ -2,13 +2,59 @@
 
 ## Build
 
-Create a macOS release from the repository root:
+Create macOS and Windows release artifacts from the repository root:
+
+```bash
+pnpm nx run pet-host:dist
+```
+
+Create only a macOS release:
 
 ```bash
 pnpm nx run pet-host:dist-mac
 ```
 
+Create only a Windows release:
+
+```bash
+pnpm nx run pet-host:dist-win
+```
+
 The target writes artifacts to `release`.
+
+## GitHub Release
+
+The desktop build workflow starts after every push or merged pull request to
+`main`, when a GitHub Release is published, or when it is started manually from
+the Actions page. Main and manual builds keep their installers as workflow
+artifacts for seven days.
+
+Publishing a GitHub Release additionally attaches the installers to that
+release. The packaged application version always comes from the root
+`package.json`. The release tag must match that version with an optional `v`
+prefix, for example package version `1.0.0` and tag `v1.0.0`.
+
+To rebuild installers manually and attach them to an existing GitHub Release,
+run this command from the repository root:
+
+```bash
+gh workflow run release.yml --ref main -f release_tag=v1.0.0
+```
+
+The workflow checks out the provided tag, verifies it against the version in
+`package.json`, and replaces release assets with the same names. The GitHub
+Release and its tag must exist before running the command.
+
+The workflow builds and attaches these installers to the published release:
+
+– macOS Intel (`x64`) DMG and ZIP
+
+– macOS Apple Silicon (`arm64`) DMG and ZIP
+
+– Windows (`x64`) NSIS installer and ZIP
+
+Keep the GitHub Release in draft state until its tag and notes are ready;
+publishing it starts the builds.
 
 ## Install On macOS
 
@@ -21,6 +67,12 @@ work, but it is not the install flow.
 
 The app is currently unsigned. On first launch macOS may block it. Use
 right-click `Open` on `Codex Pets Desktop.app`, then confirm the launch.
+
+## Install On Windows
+
+Run the generated `.exe` installer from `release` or unpack the generated `.zip`.
+The Windows build is unsigned, so SmartScreen may require manual confirmation on
+first launch.
 
 ## Smoke Check
 

@@ -1,0 +1,32 @@
+<p-dialog
+    #deleteDialog
+    header="Delete pet"
+    i18n-header="@@petManagerDeleteDialogTitle"
+    [modal]="true"
+    [visible]="manager.petForDelete() !== null"
+    class="delete-prompt-dialog"
+    (onHide)="manager.closeDeletePrompt()"
+>
+    @if (manager.petForDelete(); as pet) {
+        <p class="delete-message" i18n="@@petManagerDeleteConfirmation">
+            Delete {{ pet.title }} from local pets?
+        </p>
+    }
+
+    <ng-template #footer>
+        <p-button
+            label="Cancel"
+            i18n-label="@@petManagerCancelAction"
+            severity="secondary"
+            [text]="true"
+            (onClick)="deleteDialog.close($event)"
+        />
+        <p-button
+            icon="pi pi-trash"
+            label="Delete"
+            i18n-label="@@petManagerDeleteAction"
+            severity="danger"
+            (onClick)="confirmDelete(deleteDialog, $event)"
+        />
+    </ng-template>
+</p-dialog>

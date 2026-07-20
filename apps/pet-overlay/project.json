@@ -1,9 +1,9 @@
 {
-    "name": "pet-shell",
+    "name": "pet-overlay",
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "projectType": "application",
     "prefix": "app",
-    "sourceRoot": "apps/pet-shell/src",
+    "sourceRoot": "apps/pet-overlay/src",
     "tags": [],
     "targets": {
         "build": {
@@ -11,17 +11,22 @@
             "outputs": ["{options.outputPath}"],
             "defaultConfiguration": "production",
             "options": {
-                "outputPath": "dist/apps/pet-shell",
-                "browser": "apps/pet-shell/src/main.ts",
-                "tsConfig": "apps/pet-shell/tsconfig.app.json",
+                "outputPath": "dist/apps/pet-overlay",
+                "index": "apps/pet-overlay/src/index.html",
+                "browser": "apps/pet-overlay/src/main.ts",
+                "tsConfig": "apps/pet-overlay/tsconfig.app.json",
                 "inlineStyleLanguage": "scss",
+                "baseHref": "./",
                 "assets": [
                     {
                         "glob": "**/*",
-                        "input": "apps/pet-shell/public"
+                        "input": "apps/pet-overlay/public"
                     }
                 ],
-                "styles": ["apps/pet-shell/src/styles.scss"]
+                "styles": ["apps/pet-overlay/src/styles.scss"],
+                "stylePreprocessorOptions": {
+                    "includePaths": ["apps/pet-overlay/src/styles"]
+                }
             },
             "configurations": {
                 "production": {
@@ -52,10 +57,10 @@
             "defaultConfiguration": "development",
             "configurations": {
                 "production": {
-                    "buildTarget": "pet-shell:build:production"
+                    "buildTarget": "pet-overlay:build:production"
                 },
                 "development": {
-                    "buildTarget": "pet-shell:build:development"
+                    "buildTarget": "pet-overlay:build:development"
                 }
             }
         },
@@ -76,8 +81,8 @@
             "continuous": true,
             "executor": "@nx/web:file-server",
             "options": {
-                "buildTarget": "pet-shell:build",
-                "staticFilePath": "dist/apps/pet-shell/browser",
+                "buildTarget": "pet-overlay:build",
+                "staticFilePath": "dist/apps/pet-overlay/browser",
                 "spa": true
             }
         }

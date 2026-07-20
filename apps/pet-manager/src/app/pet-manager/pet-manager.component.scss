@@ -1,0 +1,275 @@
+@use '../../styles/variables' as *;
+
+.manager-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: $manager-page-background;
+    padding: $manager-spacing-5xl;
+}
+
+.manager-toolbar {
+    border: $manager-border-width solid $manager-border-color;
+    border-radius: $manager-radius-md;
+    background: $manager-surface;
+}
+
+.manager-title {
+    display: flex;
+    flex-direction: column;
+    gap: $manager-spacing-2xs;
+}
+
+.manager-title__text {
+    color: $manager-text-color;
+    font-size: $manager-font-size-2xl;
+    font-weight: 700;
+}
+
+.manager-title__meta {
+    color: $manager-muted-text-color;
+    font-size: $manager-font-size-base;
+}
+
+.pet-list {
+    display: grid;
+    align-content: start;
+    min-height: 0;
+    flex: 1 1 auto;
+    gap: $manager-spacing-xl;
+    width: calc(100% + #{$manager-spacing-2xl});
+    margin-top: $manager-spacing-3xl;
+    margin-inline-end: -$manager-spacing-2xl;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-inline-end: $manager-spacing-2xl;
+    scrollbar-gutter: stable;
+}
+
+.manager-toolbar .p-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: $manager-spacing-xl;
+}
+
+.manager-toolbar-control {
+    display: flex;
+    align-items: center;
+    gap: $manager-spacing-lg;
+    min-width: 0;
+}
+
+.manager-toolbar-control__icon {
+    color: $manager-muted-text-color;
+    font-size: $manager-font-size-lg;
+}
+
+.manager-toolbar-select {
+    min-width: 142px;
+}
+
+.manager-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $manager-spacing-xl;
+}
+
+.manager-add-pet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: $manager-spacing-xl;
+    margin-top: $manager-spacing-3xl;
+}
+
+.manager-add-pet__field {
+    position: relative;
+}
+
+.manager-add-pet__field input {
+    width: 100%;
+    padding-left: calc(#{$manager-spacing-5xl} + #{$manager-spacing-4xl});
+}
+
+.manager-add-pet__icon {
+    position: absolute;
+    top: 50%;
+    left: $manager-spacing-2xl;
+    z-index: 1;
+    color: $manager-muted-text-color;
+    transform: translateY(-50%);
+}
+
+.manager-add-pet__error {
+    margin: $manager-spacing-sm 0 0;
+    color: var(--p-red-400, #dc2626);
+}
+
+.manager-select-value {
+    display: inline-flex;
+    align-items: center;
+    gap: $manager-spacing-md;
+    min-width: 0;
+}
+
+.manager-select-value__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 20px;
+    border: $manager-border-width solid $manager-border-color;
+    border-radius: $manager-radius-sm;
+    color: $manager-muted-text-color;
+    font-size: $manager-font-size-xs;
+    font-weight: 700;
+}
+
+.manager-search {
+    position: relative;
+    margin-top: $manager-spacing-xl;
+}
+
+.manager-search input {
+    width: 100%;
+    padding-left: calc(#{$manager-spacing-5xl} + #{$manager-spacing-4xl});
+}
+
+.manager-search__icon {
+    position: absolute;
+    top: 50%;
+    left: $manager-spacing-2xl;
+    z-index: 1;
+    color: $manager-muted-text-color;
+    transform: translateY(-50%);
+}
+
+.pet-card,
+.empty-card {
+    display: block;
+    border: $manager-border-width solid $manager-border-color;
+    border-radius: $manager-radius-md;
+    background: $manager-surface;
+    box-shadow: none;
+}
+
+.pet-card__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $manager-spacing-2xl;
+}
+
+.pet-card__select {
+    display: flex;
+    align-items: center;
+    gap: $manager-spacing-2xl;
+    min-width: 0;
+    flex: 1 1 auto;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+}
+
+.pet-card__select:hover .pet-card__title,
+.pet-card__select:focus-visible .pet-card__title {
+    color: $manager-primary-color;
+}
+
+.pet-card__select:focus-visible {
+    outline: $manager-focus-ring-width solid $manager-primary-color;
+    outline-offset: $manager-spacing-md;
+}
+
+.pet-card__select--active {
+    cursor: default;
+}
+
+.pet-card__select:disabled {
+    color: inherit;
+    opacity: 1;
+}
+
+.pet-card__select:disabled:hover .pet-card__title {
+    color: $manager-text-color;
+}
+
+.pet-card__preview {
+    flex: 0 0 auto;
+    width: $manager-preview-width-md;
+    aspect-ratio: $manager-atlas-aspect-ratio;
+    border: $manager-border-width solid $manager-border-color;
+    border-radius: $manager-radius-md;
+    background-color: $manager-surface-alt;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: $manager-atlas-background-size;
+    image-rendering: pixelated;
+}
+
+.pet-card__preview--empty::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 100%;
+    background:
+        linear-gradient(
+            135deg,
+            transparent $manager-empty-preview-line-start,
+            $manager-border-muted-color $manager-empty-preview-line-mid-start,
+            $manager-border-muted-color $manager-empty-preview-line-mid-end,
+            transparent $manager-empty-preview-line-end
+        ),
+        linear-gradient(
+            45deg,
+            transparent $manager-empty-preview-line-start,
+            $manager-border-muted-color $manager-empty-preview-line-mid-start,
+            $manager-border-muted-color $manager-empty-preview-line-mid-end,
+            transparent $manager-empty-preview-line-end
+        );
+}
+
+.pet-card__main {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.pet-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: $manager-spacing-lg;
+}
+
+.pet-card__title,
+.empty-card h2 {
+    margin: 0;
+    color: $manager-text-color;
+    font-size: $manager-font-size-xl;
+    font-weight: 700;
+    line-height: $manager-line-height-base;
+}
+
+.pet-card__subtitle,
+.empty-card p,
+.delete-message {
+    display: block;
+    margin: $manager-spacing-sm 0 0;
+    color: $manager-muted-text-color;
+}
+
+.pet-card__actions {
+    flex: 0 0 auto;
+}
+
+.empty-card {
+    border-style: dashed;
+}
+
+.delete-prompt-dialog {
+    width: $manager-delete-dialog-width;
+}

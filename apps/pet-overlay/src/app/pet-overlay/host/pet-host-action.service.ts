@@ -1,5 +1,7 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
+import type { PetAction } from '@codex-pets-desktop/pet-domain';
+import type { PetActionChangedEvent } from '@codex-pets-desktop/pet-shared';
+import { Observable, Subject, takeUntil } from 'rxjs';
 
 @Injectable({
     providedIn: 'root',
@@ -7,16 +9,30 @@ import type { PetAction } from '@codex-pets-desktop/pet-shared';
 export class PetHostActionService implements OnDestroy {
     readonly action = signal<PetAction>('idle');
 
-    private readonly unsubscribe: (() => void) | null = null;
+    private readonly destroy$ = new Subject<void>();
 
     constructor() {
-        this.unsubscribe =
-            window.petHost?.onPetActionChanged((event) => {
+        this.createPetActionChanges()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((event) => {
                 this.action.set(event.action);
-            }) ?? null;
+            });
     }
 
     ngOnDestroy(): void {
-        this.unsubscribe?.();
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    private createPetActionChanges(): Observable<PetActionChangedEvent> {
+        return new Observable<PetActionChangedEvent>((subscriber) => {
+            const unsubscribe = window.petHost?.onPetActionChanged((event) => {
+                subscriber.next(event);
+            });
+
+            return () => {
+                unsubscribe?.();
+            };
+        });
     }
 }

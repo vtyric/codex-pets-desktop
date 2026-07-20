@@ -1,8 +1,9 @@
 import { app } from 'electron';
+import { petHostPlatforms } from '../platform/pet-host-platform.constants';
 
 export class PetLoginItemService {
     enableOpenAtLogin(): void {
-        if (process.platform !== 'darwin' || !app.isPackaged) {
+        if (process.platform !== petHostPlatforms.macOS || !app.isPackaged) {
             return;
         }
 

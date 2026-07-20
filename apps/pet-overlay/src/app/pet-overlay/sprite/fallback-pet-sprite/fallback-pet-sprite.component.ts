@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { PetAction } from '@codex-pets-desktop/pet-shared';
+import type { PetAction } from '@codex-pets-desktop/pet-domain';
 
 @Component({
     selector: 'app-fallback-pet-sprite',
