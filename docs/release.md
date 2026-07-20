@@ -41,9 +41,24 @@ run this command from the repository root:
 gh workflow run release.yml --ref main -f release_tag=v1.0.0
 ```
 
+This command requires GitHub CLI authentication:
+
+```bash
+brew install gh
+gh auth login --hostname github.com --git-protocol ssh --web
+```
+
+Alternatively, open the repository's GitHub Actions page, select
+`Build desktop installers`, choose `Run workflow`, and enter `release_tag`.
+This browser flow does not require a local token.
+
 The workflow checks out the provided tag, verifies it against the version in
 `package.json`, and replaces release assets with the same names. The GitHub
 Release and its tag must exist before running the command.
+
+`electron-builder` only creates local installers and is always invoked with
+`--publish never`. The workflow's publish job uploads release assets using the
+automatic GitHub Actions token.
 
 The workflow builds and attaches these installers to the published release:
 
