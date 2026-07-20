@@ -26,13 +26,18 @@ The target writes artifacts to `release`.
 
 The desktop build workflow starts after every push or merged pull request to
 `main`, when a GitHub Release is published, or when it is started manually from
-the Actions page. Main and manual builds keep their installers as workflow
-artifacts for seven days.
+the Actions page. Every build keeps its installers as workflow artifacts for
+seven days.
 
-Publishing a GitHub Release additionally attaches the installers to that
-release. The packaged application version always comes from the root
-`package.json`. The release tag must match that version with an optional `v`
-prefix, for example package version `1.0.0` and tag `v1.0.0`.
+After successful macOS and Windows builds from `main`, the workflow creates a
+GitHub Release named `v<package.json version>` and attaches the installers. If a
+release with that version already belongs to another commit, publication fails
+and the version in `package.json` must be increased before the next merge.
+
+Publishing an existing GitHub Release or running the workflow manually also
+attaches the installers to that release. The packaged application version always
+comes from the root `package.json`. The release tag must match that version with
+an optional `v` prefix, for example package version `1.0.0` and tag `v1.0.0`.
 
 To rebuild installers manually and attach them to an existing GitHub Release,
 run this command from the repository root:

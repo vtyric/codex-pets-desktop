@@ -78,8 +78,8 @@ apps
 Pet management UI must be a separate frontend app next to `pet-overlay`, not
 inside Electron host code and not inside the pet overlay source tree.
 `pet-manager` owns screens for viewing installed pets, searching pets, deleting
-pets through menus, adding pets through the existing Codex Pets CLI, selecting
-the active pet, and switching the manager theme. User-facing manager strings must
+pets through menus, adding pets through the Codex Pets installer package,
+selecting the active pet, and switching the manager theme. User-facing manager strings must
 use Angular template i18n markers. English is the default source locale. Language
 switching loads Angular `$localize` translations before bootstrap and reloads the
 manager window when the user selects another language, not as a runtime
@@ -89,7 +89,12 @@ selects and loads the active dictionary. Templates use Angular's short custom-ID
 markers such as `i18n-label="@@petManagerAddPetAction"`; the custom ID matches the
 JSON key.
 Electron only owns the native window that hosts this frontend and the typed IPC
-adapter to filesystem-backed pet storage.
+adapter to filesystem-backed pet storage. Pet installation runs through the
+bundled `codex-pets` package in the host process and must not depend on `npx`, a
+global Node.js installation, or the user's shell `PATH`. A newly installed pet
+becomes active immediately through the same selection flow used by the catalog,
+and the host reveals the pet window if it was hidden because the catalog was
+empty.
 
 Electron intercepts the manager window's native close event so closing the
 manager never stops the host or the pet. The window is hidden on macOS and
@@ -145,6 +150,9 @@ apps/pet-host/src/pet-manager
 
 New manager behavior should extend the small service that owns that behavior
 instead of growing one central service or adding a new generic app model.
+Deleting the active pet selects the first remaining catalog item and reloads the
+overlay. If the catalog becomes empty, the host hides the pet window instead of
+rendering the fallback pet.
 
 Inside `pet-overlay`, the pet feature is grouped under one UI boundary:
 
@@ -209,9 +217,10 @@ DMG must expose the app bundle and an `/Applications` link so installation is
 the standard drag-to-Applications flow. Publishing a GitHub Release builds
 macOS `x64` and `arm64` artifacts plus Windows `x64` artifacts on native GitHub
 Actions runners and attaches the installers to that release. Pushes to `main`
-run the same native builds and retain the installers as short-lived workflow
-artifacts without creating a GitHub Release. Packaged application versions come
-from the root `package.json`; release tags are validated against that version.
+run the same native builds and publish a GitHub Release after both platforms
+succeed. Packaged application versions come from the root `package.json`;
+release tags are validated against that version, and an existing version cannot
+be reused for a different commit.
 Manual release builds accept an existing release tag, build that tagged source,
 and replace the matching GitHub Release assets.
 

@@ -250,12 +250,6 @@ export class PetStore {
         }
 
         await rm(petDirectoryPath, { recursive: true, force: true });
-
-        const activePetId = await this.getActivePetId();
-
-        if (activePetId === command.petId) {
-            await this.saveActivePetId(this.fallbackPetState.id);
-        }
     }
 
     private readActivePetState(

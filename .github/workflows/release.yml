@@ -84,21 +84,54 @@ jobs:
 
     publish:
         name: Attach installers to release
-        if: github.event_name != 'push'
         needs: build
         runs-on: ubuntu-latest
         permissions:
             contents: write
 
         steps:
+            - name: Check out release source
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.release.tag_name || inputs.release_tag || github.sha }}
+
             - name: Download installers
               uses: actions/download-artifact@v4
               with:
                   path: release-assets
                   merge-multiple: true
 
+            - name: Create or validate GitHub Release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REQUESTED_RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+              shell: bash
+              run: |
+                  package_version="$(node --print "require('./package.json').version")"
+                  release_tag="${REQUESTED_RELEASE_TAG:-v${package_version}}"
+
+                  if gh release view "${release_tag}" >/dev/null 2>&1; then
+                      if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+                          release_target="$(gh release view "${release_tag}" --json targetCommitish --jq '.targetCommitish')"
+
+                          if [[ "${release_target}" != "${GITHUB_SHA}" ]]; then
+                              echo "Release ${release_tag} already belongs to ${release_target}. Bump package.json version before merging to main."
+                              exit 1
+                          fi
+                      fi
+                  elif [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+                      gh release create "${release_tag}" \
+                          --target "${GITHUB_SHA}" \
+                          --title "${release_tag}" \
+                          --generate-notes
+                  else
+                      echo "GitHub Release ${release_tag} does not exist."
+                      exit 1
+                  fi
+
+                  echo "RELEASE_TAG=${release_tag}" >> "${GITHUB_ENV}"
+
             - name: Upload installers to GitHub Release
               env:
                   GH_TOKEN: ${{ github.token }}
-                  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
               run: gh release upload "${RELEASE_TAG}" release-assets/* --clobber

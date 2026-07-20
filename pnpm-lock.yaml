@@ -38,6 +38,9 @@ importers:
       awilix:
         specifier: ^13.0.5
         version: 13.0.5
+      codex-pets:
+        specifier: 0.3.0
+        version: 0.3.0
       primeicons:
         specifier: ^7.0.0
         version: 7.0.0
@@ -3702,6 +3705,11 @@ packages:
   co@4.6.0:
     resolution: {integrity: sha512-QVb0dM5HvG+uaxitm8wONl7jltx8dqhfU33DcqtOZcLSVIKSDDLDi7+0LbAKiyI8hD9u42m2YxXSkMGWThaecQ==}
     engines: {iojs: '>= 1.0.0', node: '>= 0.12.0'}
+
+  codex-pets@0.3.0:
+    resolution: {integrity: sha512-b7PjV0phEK7jn0rnyXzh3LMIsAdqSUf75mCdSxZEyIuFScCxwOeUZoDxnWj97rfg4ihk6XLaKvg6fgWD+CWcAQ==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   collect-v8-coverage@1.0.3:
     resolution: {integrity: sha512-1L5aqIkwPfiodaMgQunkF1zRhNqifHBmtbbbxcr6yVxxBnliw4TDOW6NxpO8DJLgJ16OT+Y4ztZqP6p/FtXnAw==}
@@ -11610,6 +11618,8 @@ snapshots:
 
   co@4.6.0:
     optional: true
+
+  codex-pets@0.3.0: {}
 
   collect-v8-coverage@1.0.3:
     optional: true

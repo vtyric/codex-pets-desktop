@@ -1,12 +1,6 @@
-import type { PetManagerState } from '@codex-pets-desktop/pet-shared';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { addPet as installCodexPet } from 'codex-pets/src/installer.js';
 import { PetManagerCatalogService } from '../catalog/pet-manager-catalog-service';
-import { PetManagerStateBuilderService } from '../state/pet-manager-state-builder-service';
 
-const execFileAsync = promisify(execFile);
-const addPetExecutable = 'npx';
-const addPetArgs = ['--yes', 'codex-pets', 'add'] as const;
 const fullAddCommandPrefix = ['npx', 'codex-pets', 'add'] as const;
 const fullAddCommandWithYesPrefix = [
     'npx',
@@ -19,41 +13,49 @@ const invalidAddPetCommandErrorCode = 'pet-manager.invalid-add-pet-command';
 
 interface PetManagerAddPetServiceDependencies {
     petManagerCatalogService: PetManagerCatalogService;
-    petManagerStateBuilderService: PetManagerStateBuilderService;
 }
 
 export class PetManagerAddPetService {
-    private readonly pendingPetIds = new Set<string>();
+    private readonly pendingInstallations = new Map<string, Promise<string>>();
 
     constructor(
         private readonly dependencies: PetManagerAddPetServiceDependencies,
     ) {}
 
-    async addPet(commandText: string): Promise<PetManagerState> {
+    async addPet(commandText: string): Promise<string> {
         const petId = parsePetId(commandText);
 
         if (petId === null) {
             throw new Error(invalidAddPetCommandErrorCode);
         }
 
-        if (
-            this.pendingPetIds.has(petId) ||
-            (await this.dependencies.petManagerCatalogService.findInstalledPet(
+        const installedPet =
+            await this.dependencies.petManagerCatalogService.findInstalledPet(
                 petId,
-            )) !== null
-        ) {
-            return this.dependencies.petManagerStateBuilderService.createState();
+            );
+
+        if (installedPet !== null) {
+            return installedPet.id;
         }
 
-        this.pendingPetIds.add(petId);
+        const pendingInstallation = this.pendingInstallations.get(petId);
+
+        if (pendingInstallation !== undefined) {
+            return pendingInstallation;
+        }
+
+        const installation = this.installPet(petId);
+        this.pendingInstallations.set(petId, installation);
 
         try {
-            await execFileAsync(addPetExecutable, [...addPetArgs, petId]);
+            return await installation;
         } finally {
-            this.pendingPetIds.delete(petId);
+            this.pendingInstallations.delete(petId);
         }
+    }
 
-        return this.dependencies.petManagerStateBuilderService.createState();
+    private async installPet(petId: string): Promise<string> {
+        return (await installCodexPet({ petId })).id;
     }
 }
 

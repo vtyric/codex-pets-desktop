@@ -21,22 +21,53 @@ export class PetManagerStateService {
     }
 
     async addPet(commandText: string): Promise<PetManagerState> {
-        return this.dependencies.petManagerAddPetService.addPet(commandText);
+        const petId =
+            await this.dependencies.petManagerAddPetService.addPet(commandText);
+
+        return this.selectAndRenderPet(petId, true);
     }
 
     async selectPet(petId: string): Promise<PetManagerState> {
-        const state =
+        return this.selectAndRenderPet(petId);
+    }
+
+    private async selectAndRenderPet(
+        petId: string,
+        revealPet = false,
+    ): Promise<PetManagerState> {
+        const petSelected =
             await this.dependencies.petManagerPetCommandService.selectPet(
                 petId,
             );
 
+        if (!petSelected) {
+            return this.getState();
+        }
+
         this.dependencies.petWindowController.reloadPetWindow();
 
-        return state;
+        if (revealPet) {
+            this.dependencies.petWindowController.showPetWindow();
+        }
+
+        return this.getState();
     }
 
     async deletePet(petId: string): Promise<PetManagerState> {
-        return this.dependencies.petManagerPetCommandService.deletePet(petId);
+        const outcome =
+            await this.dependencies.petManagerPetCommandService.deletePet(
+                petId,
+            );
+
+        if (outcome.removedActivePet) {
+            if (outcome.nextActivePetId === null) {
+                this.dependencies.petWindowController.hidePetWindow();
+            } else {
+                this.dependencies.petWindowController.reloadPetWindow();
+            }
+        }
+
+        return this.getState();
     }
 
     async hidePet(): Promise<PetManagerState> {

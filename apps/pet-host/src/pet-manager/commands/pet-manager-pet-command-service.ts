@@ -1,12 +1,14 @@
-import type { PetManagerState } from '@codex-pets-desktop/pet-shared';
 import { PetStore } from '../../pet/pet-store';
 import { PetManagerCatalogService } from '../catalog/pet-manager-catalog-service';
-import { PetManagerStateBuilderService } from '../state/pet-manager-state-builder-service';
 
 interface PetManagerPetCommandServiceDependencies {
     petManagerCatalogService: PetManagerCatalogService;
-    petManagerStateBuilderService: PetManagerStateBuilderService;
     petStore: PetStore;
+}
+
+export interface PetDeletionOutcome {
+    nextActivePetId: string | null;
+    removedActivePet: boolean;
 }
 
 export class PetManagerPetCommandService {
@@ -14,32 +16,56 @@ export class PetManagerPetCommandService {
         private readonly dependencies: PetManagerPetCommandServiceDependencies,
     ) {}
 
-    async selectPet(petId: string): Promise<PetManagerState> {
+    async selectPet(petId: string): Promise<boolean> {
         const pet =
             await this.dependencies.petManagerCatalogService.findInstalledPet(
                 petId,
             );
 
-        if (pet !== null) {
-            await this.dependencies.petStore.saveActivePetId(pet.id);
+        if (pet === null) {
+            return false;
         }
 
-        return this.dependencies.petManagerStateBuilderService.createState();
+        await this.dependencies.petStore.saveActivePetId(pet.id);
+        return true;
     }
 
-    async deletePet(petId: string): Promise<PetManagerState> {
+    async deletePet(petId: string): Promise<PetDeletionOutcome> {
         const pet =
             await this.dependencies.petManagerCatalogService.findInstalledPet(
                 petId,
             );
 
-        if (pet !== null) {
-            await this.dependencies.petStore.deletePet({
-                installationId: pet.installationId,
-                petId: pet.id,
-            });
+        if (pet === null) {
+            return {
+                nextActivePetId: null,
+                removedActivePet: false,
+            };
         }
 
-        return this.dependencies.petManagerStateBuilderService.createState();
+        await this.dependencies.petStore.deletePet({
+            installationId: pet.installationId,
+            petId: pet.id,
+        });
+
+        if (!pet.isActive) {
+            return {
+                nextActivePetId: null,
+                removedActivePet: false,
+            };
+        }
+
+        const [nextPet] =
+            await this.dependencies.petManagerCatalogService.listInstalledPets();
+        const nextActivePetId = nextPet?.id ?? null;
+
+        if (nextActivePetId !== null) {
+            await this.dependencies.petStore.saveActivePetId(nextActivePetId);
+        }
+
+        return {
+            nextActivePetId,
+            removedActivePet: true,
+        };
     }
 }
